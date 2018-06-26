@@ -7,7 +7,7 @@
 #include <time.h>
 #include <stdbool.h>
 
-int FLAG_f_len=0;
+int FLAG_f_len=1;
 int FLAG_i_len=0;
 
 int FLAG_find_x=0;
@@ -53,68 +53,35 @@ int loop =6;
 typedef struct fliesen{
    unsigned int x_value;
    unsigned int* y_value;
+   int* in;
    unsigned int y_length;
 }fliesen;
 
+typedef struct paar{
+    long p1[2];
+    long p2[2];
+}paar;
 
 int x_length=1;
-int find_f(fliesen** x, int x_length, unsigned int wanted){
+long y_values=0;
+int find_f(fliesen** x,int left, int right, unsigned int wanted){
+
+        if (right >= left)
+        {
+            int pivo = left + (right - left)/2;
+
+            if (x[pivo]->x_value == wanted)
+                return pivo;
+
+            if (x[pivo]->x_value > wanted)
+                return find_f(x, left, pivo-1, wanted);
 
 
-    //debug
-    if(FLAG_find_x==1){
-        printf("\nsearch for x\n");
-        printf("x_achse lenght: %d wanted x: %d\n",x_length,wanted);
-    }
-
-    int len = x_length;
-    int rest=0;
-
-    //debug
-    if(FLAG_find_x==1)printf("len: %d\n",len);
-
-    if(len %2==1){
-        rest=1;
-    }
-
-    len = len/2;
-    //debug
-    if(FLAG_find_x==1)printf("find_f try search in array\n");
-
-    if(x[len]->x_value==wanted){
-
-        //debug
-        if(FLAG_i_len==1) printf("x find length: %d\n\n",len);
-
-        return len;
-    } else{
-
-        if(len==0){
-            if(FLAG_find_x==1)printf("find_f didnt find %d\n\n",wanted);
-            return -1;
+            return find_f(x, pivo+1, right, wanted);
         }
-        //debug
-        if(FLAG_find_x==1)printf("find_f try search in array\n");
 
-        if(wanted<x[len]->x_value){
-            //debug
-            if(FLAG_find_x==1)printf("find_f first half\n");
-
-            find_f(x, len, wanted);
-        }else{
-
-            //debug
-            if(FLAG_find_x==1)printf("find_f try uper array\n");
-
-            fliesen** uper = &x[len];
-
-            //debug
-            if(FLAG_find_x==1)printf("find_f split array\n");
-
-            find_f(uper,len+rest,wanted);
-        }
+        return -1;
     }
-}
 
 int sort_f(fliesen** x, int start, int end){
     int pi=0;
@@ -147,43 +114,24 @@ int sort_f(fliesen** x, int start, int end){
 
 }
 
-int find_i(unsigned int* y, int y_length, unsigned int wanted){
+int find_i(int* y,int left, int right, unsigned int wanted){
 
-    //debug
-    if(FLAG_find_y==1){
-        printf("\nsearch for y\n");
-        printf("y_achse wanted y: %d\n",wanted);
+    if (right >= left)
+    {
+        int pivo = left + (right - left)/2;
+
+        if (y[pivo] == wanted)
+            return pivo;
+
+        if (y[pivo] > wanted)
+            return find_i(y, left, pivo-1, wanted);
+
+
+        return find_i(y, pivo+1, right, wanted);
     }
 
-    int len = y_length;
-    int rest=0;
-
-    if(len %2==1){
-        rest=1;
-    }
-
-    len = len/2;
-
-    if(y[len]==wanted){
-
-        //debug
-        if(FLAG_i_len==1) printf("y find length: %d\n\n",len);
-
-        return len;
-    } else{
-        if(len==0){
-            if(FLAG_find_y==1)printf("find_i didnt find %d\n\n",wanted);
-            return -1;
-        }
-        if(wanted<y[len]){
-            find_i(y, len, wanted);
-        }else{
-            unsigned int* uper = &y[len];
-            find_i(uper,len+rest,wanted);
-        }
-    }
+    return -1;
 }
-
 int sort_i(unsigned int* y, int start, int end){
     int pi=0;
     if (start < end){
@@ -322,6 +270,8 @@ fliesen** einlesen (){
                 newFliese->y_value=(unsigned int*)malloc(1* sizeof(unsigned int));
                 newFliese->y_value[0]=atoi(part[1]);
                 newFliese->y_length=1;
+                newFliese->in=(int*)malloc(1* sizeof(int));
+                newFliese->in[0]=-1;
                 x_achse[0]=newFliese;
 
         }else{
@@ -340,7 +290,7 @@ fliesen** einlesen (){
             unsigned int x = atoi(part[0]);
             sort_f(x_achse,0,x_length-1);
             int x_pos;
-            if((x_pos=find_f(x_achse,x_length,x))==-1) {
+            if((x_pos=find_f(x_achse,0,x_length-1,x))==-1) {
 
                 //debug
                 if(FLAG_einlesen_xAchse==1) {
@@ -431,6 +381,8 @@ fliesen** einlesen (){
 
                 newFilese->x_value = x;
                 newFilese->y_value = (unsigned int *) malloc(1 * sizeof(unsigned int));
+                newFilese->in=(int*)malloc(1* sizeof(int));
+                newFilese->in[0]=-1;
 
                 //debug
                 if(FLAG_einlesen_xAchse==1) printf("newArray malloc y_Achse for %d ok\n",x);
@@ -452,37 +404,44 @@ fliesen** einlesen (){
 
             }else{
 
+                printf("\n--------------------------\n");
+                printf("x: %d, x_pos:%d, x_value: %d, y_length:%d\n",x,x_pos,x_achse[x_pos]->x_value,x_achse[x_pos]->y_length);
+                printf("\n--------------------------\n");
                 //debug
                 if(FLAG_einlesen_X==1) printf("And x allready exsist part[0] x zuweisen\n");
 
                 unsigned int y_length = x_achse[x_pos]->y_length;
 
                 //debug
-                if(FLAG_einlesen_yAchse==1)printf("SIZE Y: %d\n",y_length);
+                if(FLAG_einlesen_yAchse==1)printf("SIZE 2Y: %d\n",y_length);
 
                 sort_i(x_achse[x_pos]->y_value,0,y_length-1);
 
-                if(find_i(x_achse[x_pos]->y_value,y_length,atoi(part[1]))<0){
+                if(find_i(x_achse[x_pos]->y_value,0,y_length,atoi(part[1]))<0){
 
                     //debug
-                    if(FLAG_einlesen_yAchse==1) printf("\nbigger Y for X=%d\n",x_pos);
+                    if(FLAG_einlesen_yAchse==1) printf("\nbigger Y for X=%d\n",x_achse[x_pos]->x_value);
 
                     unsigned int *newY= (unsigned int *) malloc((y_length+1) * sizeof(unsigned int));
+                    unsigned int *newin= (int *) malloc((y_length+1) * sizeof(int));
                     for (int j = 0; j < y_length; ++j) {
                         newY[j]=x_achse[x_pos]->y_value[j];
-
+                        newin[j]=-1;
                         //debug
                         if(FLAG_einlesen_yAchse==1) printf("newY[%d]=x_achse[%d]->y_value[%d]=%d\n",j,x_pos,j,x_achse[x_pos]->y_value[j]);
                     }
                     free(x_achse[x_pos]->y_value);
+                    free(x_achse[x_pos]->in);
                     x_achse[x_pos]->y_value=newY;
+                    x_achse[x_pos]->in=newin;
 
                     //debug
                     if(FLAG_einlesen_yAchse==1) printf("Y_len=%d\n",y_length);
 
                     x_achse[x_pos]->y_value[y_length]=atoi(part[1]);
                     x_achse[x_pos]->y_length=(x_achse[x_pos]->y_length+1);
-
+                    x_achse[x_pos]->in[y_length]=-1;
+                    sort_i(x_achse[x_pos]->y_value,0,y_length);
                     //debug
                     if(FLAG_einlesen_yAchse==1) printf("Y_len new=%d\n",x_achse[x_pos]->y_length);
                     for (int j = 0; j < x_achse[x_pos]->y_length; ++j) {
@@ -507,8 +466,320 @@ fliesen** einlesen (){
 
 
 
+long*** teilmenge(fliesen** x_achse){
+    for (int i = 0; i < x_length; ++i) {
+        long size = x_achse[i]->y_length;
+        y_values=y_values+size;
+    }
+
+    printf("Erste Schleife OK\n");//debug
+
+    if (y_values%2!=0){
+        printf("Es ist kein matching moeglich: ungerade Anzahl von Fliesen.\n");
+        exit(0);
+    }
+    printf("y_values: %d\n",y_values);
+    printf("y_values / 2: %d\n",y_values/2);
+    long** A = (long**)malloc((y_values/2)* sizeof(long*));
+    long** B = (long**)malloc((y_values/2)* sizeof(long*));
+    long*** graph =(long***)malloc(2* sizeof(long**));
+
+    if(A==NULL || B==NULL ||graph==NULL){
+        printf("Nicht genug Speicher vorhanden.\n");
+        exit(-1);
+    }
+
+    for (int j = 0; j < (y_values/2) ; ++j) {
+        A[j]=(long*)malloc(3* sizeof(long));
+        B[j]=(long*)malloc(3* sizeof(long));
+        A[j][0]=-1;
+        A[j][1]=-1;
+        A[j][2]=0;
+        B[j][0]=-1;
+        B[j][1]=-1;
+        B[j][2]=0;
+    }
 
 
+    printf("Zweite Schleife OK\n");//debug
+
+    graph[0]=A;
+    graph[1]=B;
+    return graph;
+}
+
+
+long*** raum_bestimmen_intern(fliesen** x_achse, long x_koord, long y_koord, long*** graph){
+
+    int x_pos=find_f(x_achse,0,x_length,x_koord);
+
+    if(x_pos==-1){
+        printf("Error no x_koord found!\n");
+        exit(-1);
+    }
+
+    int y_pos=find_i(x_achse[x_pos]->y_value,0,x_achse[x_pos]->y_length,y_koord);
+
+    if(y_pos==-1){
+        printf("Error no y_koord found!\n");
+        exit(-1);
+    }
+
+    int y2_pos;
+
+    printf("x_koord: %ld x_pos: %d\n",x_koord,x_pos);//debug
+    printf("y_koord: %ld y_pos: %d\n",y_koord,y_pos);//debug
+    if (x_achse[x_pos]->in[y_pos]==-1){
+        x_achse[x_pos]->in[y_pos]=1; //A=1, B=2
+        for (int i = 0; i < y_values/2; ++i) {
+            if(graph[0][i][0]==-1){
+                graph[0][i][0]=x_koord;
+                graph[0][i][1]=y_koord;
+                break;
+            }
+        }
+        printf("first is ok\n");//debug
+    }
+    int menge=x_achse[x_pos]->in[y_pos];//1=A 2=B
+    printf("menge: %d\n",menge);//debug
+    if(menge==1) {
+        if (0 <= y_pos - 1) {
+            if (x_achse[x_pos]->y_value[y_pos] - 1 == x_achse[x_pos]->y_value[y_pos - 1]) {
+                if (x_achse[x_pos]->in[y_pos - 1] == -1) {
+                    printf("01\n");//debug
+                    for (int i = 0; i < y_values / 2; ++i) {
+                        if (graph[1][i][0] == -1) {
+                            graph[1][i][0] = x_koord;
+                            graph[1][i][1] = y_koord - 1;
+                            x_achse[x_pos]->in[y_pos - 1] = 2;
+                            graph=raum_bestimmen_intern(x_achse, x_koord, (y_koord - 1), graph);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (x_achse[x_pos]->y_length >= y_pos + 1) {
+            if (x_achse[x_pos]->y_value[y_pos] + 1 == x_achse[x_pos]->y_value[y_pos + 1]) {
+                if (x_achse[x_pos]->in[y_pos + 1] == -1) {
+                    printf("02\n");//debug
+                    for (int i = 0; i < y_values / 2; ++i) {
+                        if (graph[1][i][0] == -1) {
+                            graph[1][i][0] = x_koord;
+                            graph[1][i][1] = y_koord + 1;
+                            x_achse[x_pos]->in[y_pos + 1] = 2;
+                            graph=raum_bestimmen_intern(x_achse, x_koord, (y_koord + 1), graph);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (x_length-1 >= x_pos + 1) {
+            y2_pos=find_i(x_achse[x_pos + 1]->y_value,0,x_achse[x_pos + 1]->y_length,x_achse[x_pos]->y_value[y_pos]);
+            if (y2_pos!=-1) {
+                if (x_achse[x_pos + 1]->in[y2_pos] == -1) {
+                    printf("03\n");//debug
+                    for (int i = 0; i < y_values / 2; ++i) {
+                        if (graph[1][i][0] == -1) {
+                            graph[1][i][0] = x_koord + 1;
+                            graph[1][i][1] = y_koord;
+                            x_achse[x_pos + 1]->in[y2_pos] = 2;
+                            graph=raum_bestimmen_intern(x_achse, (x_koord + 1), y_koord, graph);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (0 <= x_pos - 1) {
+            y2_pos=find_i(x_achse[x_pos - 1]->y_value,0,x_achse[x_pos - 1]->y_length,x_achse[x_pos]->y_value[y_pos]);
+            if (y2_pos!=-1) {
+                if (x_achse[x_pos - 1]->in[y2_pos] == -1) {
+                    printf("04\n");//debug
+                    for (int i = 0; i < y_values / 2; ++i) {
+                        if (graph[1][i][0] == -1) {
+                            graph[1][i][0] = x_koord - 1;
+                            graph[1][i][1] = y_koord;
+                            x_achse[x_pos - 1]->in[y2_pos] = 2;
+                            graph=raum_bestimmen_intern(x_achse, (x_koord - 1), y_koord, graph);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if(menge==2){
+        if (0 <= y_pos - 1) {
+            if (x_achse[x_pos]->y_value[y_pos] - 1 == x_achse[x_pos]->y_value[y_pos - 1]) {
+                if (x_achse[x_pos]->in[y_pos - 1] == -1) {
+                    printf("012\n");//debug
+                    for (int i = 0; i < y_values / 2; ++i) {
+                        if (graph[0][i][0] == -1) {
+                            graph[0][i][0] = x_koord;
+                            graph[0][i][1] = y_koord - 1;
+                            x_achse[x_pos]->in[y_pos - 1] = 1;
+                            graph=raum_bestimmen_intern(x_achse, x_koord, (y_koord - 1), graph);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (x_achse[x_pos]->y_length >= y_pos + 1) {
+            if (x_achse[x_pos]->y_value[y_pos] + 1 == x_achse[x_pos]->y_value[y_pos + 1]) {
+                if (x_achse[x_pos]->in[y_pos + 1] == -1) {
+                    printf("022\n");//debug
+                    for (int i = 0; i < y_values / 2; ++i) {
+                        if (graph[0][i][0] == -1) {
+                            graph[0][i][0] = x_koord;
+                            graph[0][i][1] = y_koord + 1;
+                            x_achse[x_pos]->in[y_pos + 1] = 1;
+                            graph=raum_bestimmen_intern(x_achse, x_koord, (y_koord + 1), graph);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (x_length-1 >= x_pos + 1) {
+            y2_pos=find_i(x_achse[x_pos + 1]->y_value,0,x_achse[x_pos + 1]->y_length,x_achse[x_pos]->y_value[y_pos]);
+            if (y2_pos!=-1) {
+                if (x_achse[x_pos + 1]->in[y2_pos] == -1) {
+                    printf("032\n");//debug
+                    for (int i = 0; i < y_values / 2; ++i) {
+                        if (graph[0][i][0] == -1) {
+                            graph[0][i][0] = x_koord + 1;
+                            graph[0][i][1] = y_koord;
+                            x_achse[x_pos + 1]->in[y2_pos] = 1;
+                            graph=raum_bestimmen_intern(x_achse, (x_koord + 1), y_koord, graph);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (0 <= x_pos - 1) {
+            y2_pos=find_i(x_achse[x_pos - 1]->y_value,0,x_achse[x_pos - 1]->y_length,x_achse[x_pos]->y_value[y_pos]);
+            if (y2_pos!=-1) {
+                if (x_achse[x_pos - 1]->in[y2_pos] == -1) {
+                    printf("042\n");//debug
+                    for (int i = 0; i < y_values / 2; ++i) {
+                        if (graph[0][i][0] == -1) {
+                            graph[0][i][0] = x_koord - 1;
+                            graph[0][i][1] = y_koord;
+                            x_achse[x_pos - 1]->in[y2_pos] = 1;
+                            graph=raum_bestimmen_intern(x_achse, (x_koord - 1), y_koord, graph);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return graph;
+
+
+}
+
+long*** raum_bestimmen(fliesen** x_achse, long x_koord, long y_koord, long*** graph){
+    graph=raum_bestimmen_intern(x_achse,x_koord,y_koord,graph);
+    for (int i = 0; i < x_length-1; ++i) {
+       free(x_achse[i]->in);
+    }
+    return graph;
+}
+
+paar** loesen(long*** graph,fliesen** x_achse){
+    paar**loesung=(paar**)malloc((y_values/2)*sizeof(paar*));
+    for (int i = 0; i < y_values/2; ++i) {
+        loesung[i]=(paar*)malloc(sizeof(paar));
+    }
+    int count=0;
+    for (int j = 0; j < y_values/2; ++j) {
+        int Ax_koord=graph[0][j][0];
+        int Ay_koord=graph[0][j][1];
+        if(graph[0][j][0]==-1||graph[1][j][0]==-1){
+            break;
+        }
+        for (int i = 0; i < y_values/2; ++i) {
+            int Bx_koord=graph[1][i][0];
+            int By_koord=graph[1][i][1];
+            int gepaart=graph[1][i][2];
+            if(gepaart==0) {
+                if (Ax_koord - 1 == Bx_koord && Ay_koord == By_koord) {
+                    graph[1][i][2]=1;
+                    graph[0][j][2]=1;
+                    loesung[count]->p1[0]=Ax_koord;
+                    loesung[count]->p1[1]=Ay_koord;
+                    loesung[count]->p2[0]=Bx_koord;
+                    loesung[count]->p2[1]=By_koord;
+                    count++;
+                    break;
+                }
+                if (Ax_koord + 1 == Bx_koord && Ay_koord == By_koord) {
+                    graph[1][i][2]=1;
+                    graph[0][j][2]=1;
+                    loesung[count]->p1[0]=Ax_koord;
+                    loesung[count]->p1[1]=Ay_koord;
+                    loesung[count]->p2[0]=Bx_koord;
+                    loesung[count]->p2[1]=By_koord;
+                    count++;
+                    break;
+                }
+                if (Ax_koord == Bx_koord && Ay_koord - 1 == By_koord) {
+                    graph[1][i][2]=1;
+                    graph[0][j][2]=1;
+                    loesung[count]->p1[0]=Ax_koord;
+                    loesung[count]->p1[1]=Ay_koord;
+                    loesung[count]->p2[0]=Bx_koord;
+                    loesung[count]->p2[1]=By_koord;
+                    count++;
+                    break;
+                }
+                if (Ax_koord == Bx_koord && Ay_koord + 1 == By_koord) {
+                    graph[1][i][2]=1;
+                    graph[0][j][2]=1;
+                    loesung[count]->p1[0]=Ax_koord;
+                    loesung[count]->p1[1]=Ay_koord;
+                    loesung[count]->p2[0]=Bx_koord;
+                    loesung[count]->p2[1]=By_koord;
+                    count++;
+                    break;
+                }
+            }
+        }
+    }
+    return loesung;
+}
+
+void check(paar** losung, long*** graph){
+    int k=1;
+    for (int i = 0; i < y_values/2; ++i) {
+        if(graph[0][i][0]==-1){
+            break;
+        }
+        if(graph[0][i][2]!=1||graph[1][i][2]!=1){
+            printf("%d,%d or %d,%d\n",graph[0][i][0],graph[0][i][1],graph[1][i][0],graph[1][i][1]);
+            k=0;
+        }
+    }
+    if(k==1) {
+        printf("\nvvvvvvvvvvvvvvvvvv--loesung--vvvvvvvvvvvvv\n");
+        for (int k = 0; k < y_values / 2; ++k) {
+            if(graph[0][k][0]==-1){
+                break;
+            }
+            printf("\n--------------Paar %d--------------\n", k);
+            printf("Aus A: (%ld,%ld)  ||  Aus B: (%ld,%ld)\n", losung[k]->p1[0], losung[k]->p1[1], losung[k]->p2[0], losung[k]->p2[1]);
+        }
+    } else{
+        //fixme statt printf neue lösung suchen.
+        printf("keine loesung.\n");
+        exit(0);
+    }
+}
 /*
  * TestFunktion
  */
@@ -525,6 +796,15 @@ void TEST_FKT(fliesen** x_achse){
     for (int j = 0; j < x_length; ++j) {
         printf("x[j]= %d\n",x_achse[j]->x_value);
     }
+    long*** graph;
+    graph=teilmenge(x_achse);
+    graph=raum_bestimmen(x_achse,x_achse[0]->x_value,x_achse[0]->y_value[0],graph);
+
+    for (int k = 0; k <(y_values/2) ; ++k) {
+        printf("A[%d]:(%ld,%ld)        B[%d]:(%ld,%ld)\n",k,graph[0][k][0],graph[0][k][1],k,graph[1][k][0],graph[1][k][1]);
+    }
+    paar** losung=loesen(graph,x_achse);
+    check(losung,graph);
     freeDataStruct(x_achse);
 }
 
