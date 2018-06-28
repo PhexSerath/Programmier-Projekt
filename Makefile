@@ -18,8 +18,8 @@ $(BUILD_DIR):
 
 LIST = $(foreach ele, $(NAME), $(TO))
 TO = cp -f $(TEST_DIR)/$(ele) $(BUILD_DIR)/$(ele);
-
-TEST = example01.dat
+#exampleOWN.dat
+TEST = example09.dat
 
 ls:
 
@@ -46,3 +46,9 @@ clean:
 	
 val: all
 	cd $(BUILD_DIR) && G_SLICE=always-malloc G_DEBUG=gc-friendly  valgrind -v --tool=memcheck --leak-check=full --show-leak-kinds=all --num-callers=40 --log-file=valgrind.log ./prog < $(TEST)
+
+showtime: all
+	cd $(BUILD_DIR)&& clear && time ./prog < $(TEST)
+
+
+	
